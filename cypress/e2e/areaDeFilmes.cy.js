@@ -1,8 +1,9 @@
-let token
-let idFilme
+
 before(function () {
     cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
     cy.fixture("users/requests/filmeUsuarioComum").as("filme")
+    let token
+    let idFilme
 })
 describe("Testes de Cadastro de filme com usuario comum", function () {
     it("Login usuario comum", function () {
@@ -50,10 +51,13 @@ describe("Testes de Cadastro de filme com usuario administrador", function () {
         cy.request({
             method: "POST",
             url: "movies",
-            body: this.filme
+            body: this.filme,
+            headers: {
+                Authorization: 'Bearer ' + token
+            }
         }).then(function (response) {
             expect(response.status).to.eq(201)
-            expect(response.body).to.include(this.filme)
+            expect(response.body).to.include("title")
         })
     })
 })

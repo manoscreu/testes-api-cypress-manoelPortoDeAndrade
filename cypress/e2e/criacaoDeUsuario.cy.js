@@ -7,6 +7,40 @@ before(function () {
     cy.fixture("users/responses/erroEmailInUse").as("emailEmUso")
     cy.fixture("users/responses/erroSenhaMenos6Char").as("errosenhamenos6")
 })
+after(function (response) {
+    cy.request({
+        method: "POST",
+        url: "auth/login",
+        body: {
+            name: fakeName,
+            email: fakeMail,
+            password: "123456"
+        }.then(function (response) {
+            let token = response.body.accessToken
+            cy.request({
+                method: "POST",
+                url: "auth/login",
+                body: {
+                    name: fakeName,
+                    email: fakeMail,
+                    password: "123456"
+                },
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            }).then(function () {
+                cy.request({
+                    method: "POST",
+                    url: "users/" + uId,
+                    headers: {
+                        Authorization: 'Bearer ' + token
+                    }
+                })
+            })
+        })
+    })
+})
+
 describe("Criação de um usuario ja existente", function () {
     it("Tenta criar um usuario ja existente", function () {
         cy.request({
@@ -75,6 +109,7 @@ describe("Criação de usuario aleatorio", function () {
             }
         })
             .then(function (response) {
+                let uId = response.body.id
                 expect(response.status).to.equal(201);
                 expect(typeof response.body.id).to.eq("number");
                 expect(response.body).to.deep.include({
