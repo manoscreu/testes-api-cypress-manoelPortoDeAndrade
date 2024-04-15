@@ -1,0 +1,19 @@
+{
+  "name": "testes-api",
+  "version": "1.0.0",
+  "description": "Testes de API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Manel",
+  "license": "ISC",
+  "dependencies": {
+    "cypress": "^13.7.2",
+    "faker": "^5.5.3"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "cypress-dark": "^1.1.0"
+  }
+}
