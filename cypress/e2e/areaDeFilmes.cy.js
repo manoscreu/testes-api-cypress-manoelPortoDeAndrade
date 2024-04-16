@@ -2,6 +2,7 @@ describe("Testes de Cadastro de filme com usuario comum", function () {
     before(function () {
         cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
         cy.fixture("users/requests/cadastroFilme").as("filmeTeste")
+        cy.fixture("users/responses/erroUserNaoAutorizado").as("erroNaoAutorizado")
     })
     it("Login usuario comum e tenta cadastrar um filme", function () {
         cy.request({
@@ -16,11 +17,7 @@ describe("Testes de Cadastro de filme com usuario comum", function () {
             failOnStatusCode: false
         }).then(function (response) {
             expect(response.status).to.equal(401)
-            expect(response.body).to.deep.equal({
-                "message": "Access denied.",
-                "error": "Unauthorized",
-                "statusCode": 401
-            })
+            expect(response.body).to.deep.equal(this.erroNaoAutorizado)
         })
     })
 })
