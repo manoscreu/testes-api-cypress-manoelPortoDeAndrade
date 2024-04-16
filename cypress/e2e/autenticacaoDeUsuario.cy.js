@@ -1,18 +1,13 @@
 import { faker } from "@faker-js/faker";
-let fakeMail = faker.internet.email()
-let token
-
-before(function () {
-    cy.fixture("users/requests/usuarioDeTestesLogin").as("LoginExistente")
-})
 
 describe("Teste o login de um usuario inexistente", function () {
+    let fakeMail = faker.internet.email()
     it("Tenta fazer o login com um usuario inexistente", function () {
         cy.request({
             method: "POST",
-            url: "auth/login",
+            url: "/auth/login",
             body: {
-                email: fakeMail,
+                email: "garantiaDeErro"+fakeMail,
                 password: "123456"
             },
             failOnStatusCode: false
@@ -27,11 +22,18 @@ describe("Teste o login de um usuario inexistente", function () {
         })
     })
 })
+
+
 describe("Teste o login de um usuario existente", function () {
+    // posso criar um usuario antes com o command para n ter perigo de perder o user caso a api resete
+    let token
+    before(function () {
+        cy.fixture("users/requests/usuarioDeTestesLogin").as("LoginExistente")
+    })
     it("Faz o login com um usuario existente", function () {
         cy.request({
             method: "POST",
-            url: "auth/login",
+            url: "/auth/login",
             body: this.LoginExistente,
         }).then(function (response) {
             token = response.body.accessToken

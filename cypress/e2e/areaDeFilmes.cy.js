@@ -1,23 +1,18 @@
-
-before(function () {
-    cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
-    cy.fixture("users/requests/filmeUsuarioComum").as("filme")
-    let token
-    let idFilme
-})
 describe("Testes de Cadastro de filme com usuario comum", function () {
-    it("Login usuario comum", function () {
+    before(function () {
+        cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
+        cy.fixture("users/requests/cadastroFilme").as("filmeTeste")
+    })
+    it("Login usuario comum e tenta cadastrar um filme", function () {
         cy.request({
             method: "POST",
-            url: "auth/login",
+            url: "/auth/login",
             body: this.usuario
         })
-    })
-    it("Teste de cadastro de filme com um usuario comum", function () {
         cy.request({
             method: "POST",
-            url: "movies",
-            body: this.filme,
+            url: "/movies",
+            body: this.filmeTeste,
             failOnStatusCode: false
         }).then(function (response) {
             expect(response.status).to.equal(401)
@@ -31,33 +26,49 @@ describe("Testes de Cadastro de filme com usuario comum", function () {
 })
 
 describe("Testes de Cadastro de filme com usuario administrador", function () {
+    let userToken
+    let tamanhoArray
+    before(function () {
+        cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
+        cy.fixture("users/requests/cadastroFilme").as("dadosFilme")
+    })
+
     it("Login e autenticaçao usuario administrador", function () {
+
         cy.request({
             method: "POST",
-            url: "auth/login",
+            url: "/auth/login",
             body: this.usuario
         }).then(function (response) {
-            token = response.body.accessToken
+            userToken = response.body.accessToken
+            expect(response.status).to.equal(200)
             cy.request({
                 method: "PATCH",
-                url: "users/admin",
+                url: "/users/admin",
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + userToken
                 }
+            }).then(function (response) {
+                expect(response.status).to.equal(204)
             })
-        })
-    })
-    it("Testa o cadastro de um filme como um usuario administrado", function () {
-        cy.request({
-            method: "POST",
-            url: "movies",
-            body: this.filme,
-            headers: {
-                Authorization: 'Bearer ' + token
-            }
-        }).then(function (response) {
-            expect(response.status).to.eq(201)
-            expect(response.body).to.include("title")
+            cy.request({
+                method: "POST",
+                url: "/movies",
+                body: this.dadosFilme,
+                headers: {
+                    Authorization: 'Bearer ' + userToken
+                }
+            }).then(function (response) {
+                expect(response.status).to.equal(201)
+            })
+            cy.request({
+                method: "GET",
+                url: "/movies"
+            }).then(function (response) {
+                tamanhoArray = response.body.length - 1
+                expect(response.status).to.equal(200)
+                expect(response.body[tamanhoArray]).to.include(this.dadosFilme)
+            })
         })
     })
 })
