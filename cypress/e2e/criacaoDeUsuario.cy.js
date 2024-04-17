@@ -107,6 +107,7 @@ describe("Criação de usuario aleatorio", function () {
             })
         })
     })
+
     it("Sempre cria um usuario aletaorio, não deve falhar", function () {
         cy.request({
             method: "POST",

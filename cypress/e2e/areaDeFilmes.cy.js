@@ -2,17 +2,17 @@ import { faker } from "@faker-js/faker";
 
 
 describe("Testes de Cadastro de filme sem usuario conectado", function () {
-    before(function(){
+    before(function () {
         cy.fixture("users/responses/erroUserNaoAutorizado").as("erroNaoAutorizado")
     })
-    it("Tenta fazer o cadastro de um filme sem logar em um usuario",function(){
+    it("Tenta fazer o cadastro de um filme sem logar em um usuario", function () {
         cy.request({
             method: "POST",
             url: "/movies",
             body: this.filmeTeste,
             failOnStatusCode: false
         }).then(function (response) {
-            
+
             expect(response.status).to.equal(401)
             expect(response.body).to.deep.equal(this.erroNaoAutorizado)
         })
@@ -20,16 +20,41 @@ describe("Testes de Cadastro de filme sem usuario conectado", function () {
 })
 
 describe("Testes de Cadastro de filme com usuario comum", function () {
+    let criaEmail = faker.internet.email()
+    let criaNome = faker.internet.userName()
     before(function () {
-        cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
-        cy.fixture("users/requests/cadastroFilme").as("filmeTeste")
+        cy.request("POST", "/users", {
+            name: criaNome,
+            email: criaEmail,
+            password: "123456"
+        })
+        cy.fixture("requests/cadastroFilme").as("filmeTeste")
         cy.fixture("users/responses/erroUserNaoAutorizado").as("erroNaoAutorizado")
+    })
+    afterEach(function () {
+        let token
+        cy.request("POST", "/auth/login", {
+            email: criaEmail,
+            password: "123456"
+        }).then(function (response) {
+            token = response.body.accessToken
+            cy.request({
+                method: "PATCH",
+                url: "/users/inactivate",
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            })
+        })
     })
     it("Login usuario comum e tenta cadastrar um filme", function () {
         cy.request({
             method: "POST",
             url: "/auth/login",
-            body: this.usuario
+            body: {
+                email: criaEmail,
+                password: "123456"
+            }
         })
         cy.request({
             method: "POST",
@@ -50,8 +75,7 @@ describe("Testes de Cadastro de filme com usuario administrador", function () {
     let nomeTeste = faker.internet.userName()
     let uid
     before(function () {
-        cy.fixture("users/requests/usuarioDeTestesLogin").as("usuario")
-        cy.fixture("users/requests/cadastroFilme").as("dadosFilme")
+        cy.fixture("/requests/cadastroFilme").as("dadosFilme")
         cy.request("POST", "/users", {
             name: nomeTeste,
             email: emailTeste,
@@ -74,7 +98,7 @@ describe("Testes de Cadastro de filme com usuario administrador", function () {
             })
         })
     })
-    after(function () {
+    afterEach(function () {
         cy.request({
             method: "DELETE",
             url: "/users/" + uid,
@@ -106,41 +130,41 @@ describe("Testes de Cadastro de filme com usuario administrador", function () {
 
 })
 
-describe("Testes de busca de filmes", function(){
-    let tamanhoArray 
-    it("Lista todos os filmes sem ordem de avaliaçoes e verifica o primeiro criado e o ultimo criado",function(){
+describe("Testes de busca de filmes", function () {
+    let tamanhoArray
+    it("Lista todos os filmes sem ordem de avaliaçoes e verifica o primeiro criado e o ultimo criado", function () {
         cy.request({
             method: "GET",
             url: "/movies",
             sort: false
-        }).then(function(response){
+        }).then(function (response) {
             expect(response.body).to.be.an("array")
-            tamanhoArray = response.body.length-1
+            tamanhoArray = response.body.length - 1
             cy.log(response.body[0])
             cy.log(response.body[tamanhoArray])
         })
     })
-    it("Lista todos os filmes por ordem de avaliação e verifica os com maior e menor avaliação ",function(){
+    it("Lista todos os filmes por ordem de avaliação e verifica os com maior e menor avaliação ", function () {
         cy.request({
             method: "GET",
             url: "/movies",
             sort: true
-        }).then(function(response){
+        }).then(function (response) {
             expect(response.body).to.be.an("array")
-            tamanhoArray = response.body.length-1
+            tamanhoArray = response.body.length - 1
             cy.log(response.body)
             cy.log(response.body[0])
             cy.log(response.body[tamanhoArray])
         })
     })
-    it("Verifica o ultimo filme cadastrado ",function(){
+    it("Verifica o ultimo filme cadastrado ", function () {
         cy.request({
             method: "GET",
             url: "/movies",
             sort: false
-        }).then(function(response){
+        }).then(function (response) {
             expect(response.body).to.be.an("array")
-            tamanhoArray = response.body.length-1
+            tamanhoArray = response.body.length - 1
             expect(response.body[tamanhoArray].id).to.be.an("number")
             expect(response.body[tamanhoArray].title).to.be.an("string")
             expect(response.body[tamanhoArray].genre).to.be.an("string")
