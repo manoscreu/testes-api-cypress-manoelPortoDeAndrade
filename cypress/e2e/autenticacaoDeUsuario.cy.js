@@ -21,7 +21,6 @@ describe("Teste o login de um usuario inexistente", function () {
             expect(response.status).to.equal(401);
             expect(response.body.error).to.equal("Unauthorized");
             expect(response.body.message).to.equal("Invalid username or password.");
-            cy.log(response.body)
         })
     })
 })

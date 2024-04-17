@@ -1,14 +1,41 @@
 import { faker } from "@faker-js/faker";
+
 describe("Criação de um usuario ja existente", function () {
+    let criaEmail = faker.internet.email()
+    let criaNome = faker.internet.userName()
     before(function () {
         cy.fixture("users/responses/erroEmailInUse").as("emailEmUso")
-        cy.fixture("users/requests/usuarioDeTestesCadastro").as("userExistente")
+        cy.request("POST", "/users", {
+            name: criaNome,
+            email: criaEmail,
+            password: "123456"
+        })
+    })
+    afterEach(function () {
+        let token
+        cy.request("POST", "/auth/login", {
+            email: criaEmail,
+            password: "123456"
+        }).then(function (response) {
+            token = response.body.accessToken
+            cy.request({
+                method: "PATCH",
+                url: "/users/inactivate",
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            })
+        })
     })
     it("Tenta criar um usuario ja existente", function () {
         cy.request({
             method: "POST",
             url: "/users",
-            body: this.userExistente,
+            body: {
+                name: criaNome,
+                email: criaEmail,
+                password: "123456"
+            },
             failOnStatusCode: false
         }).then(function (response) {
             expect(response.body).to.deep.eq(this.emailEmUso)
