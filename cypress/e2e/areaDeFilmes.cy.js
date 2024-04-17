@@ -30,7 +30,7 @@ describe("Testes de Cadastro de filme com usuario administrador", function () {
         cy.fixture("users/requests/cadastroFilme").as("dadosFilme")
     })
 
-    it("Login e autenticaçao usuario administrador", function () {
+    it("Faz o login de um usuario administrador e cadastra um filme", function () {
 
         cy.request({
             method: "POST",
