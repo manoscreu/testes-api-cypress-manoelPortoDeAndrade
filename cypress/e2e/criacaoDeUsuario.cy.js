@@ -17,10 +17,12 @@ describe("Criação de um usuario ja existente", function () {
     })
 })
 
-describe("Criação de um usuario com senha muito curta", function () {
-    before(function () {
+describe("Teste de criaçao de usuario com senha invalida", function () {
+    beforeEach(function () {
         cy.fixture("users/responses/erroSenhaMenos6Char").as("errosenhamenos6")
         cy.fixture("users/requests/testeCriarUserSenha6Char").as("userSenha6Char")
+        cy.fixture("users/responses/erroSenhaMaior12Char").as("erroSenhaMaior12")
+        cy.fixture("users/requests/testeCriarUserSenhaMais12Char").as("usuarioMais12")
     })
     it("Tenta criar um usuario com uma senha menor que 6 digitos", function () {
         cy.request({
@@ -33,18 +35,11 @@ describe("Criação de um usuario com senha muito curta", function () {
             expect(response.status).to.equal(400)
         })
     })
-})
-
-describe("Criação de um usuario com senha muito longa", function () {
-    before(function () {
-        cy.fixture("users/responses/erroSenhaMaior12Char").as("erroSenhaMaior12")
-        cy.fixture("users/requests/testeCriarUserSenhaMais12Char").as("userMais12Char")
-    })
     it("Tenta criar um usuario com uma senha maior que 12 digitos", function () {
         cy.request({
             method: "POST",
             url: "/users",
-            body: this.userMais12Char,
+            body: this.usuarioMais12,
             failOnStatusCode: false
         }).then(function (response) {
             expect(response.body).to.deep.eq(this.erroSenhaMaior12)
@@ -86,7 +81,6 @@ describe("Criação de usuario aleatorio", function () {
         })
     })
     it("Sempre cria um usuario aletaorio, não deve falhar", function () {
-
         cy.request({
             method: "POST",
             url: "/users",
