@@ -162,7 +162,7 @@ describe("Testes de busca de filmes", function () {
     })
 })
 
-describe.only("Testes de atualização de filmes", function () {
+describe("Testes de atualização de filmes", function () {
     let uId;
     let userToken;
     let titulo;
