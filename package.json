@@ -10,7 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "cypress": "^13.7.2",
-    "faker": "^5.5.3"
+    "faker": "^5.5.3",
+    "lorem-ipsum": "^2.0.8"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",

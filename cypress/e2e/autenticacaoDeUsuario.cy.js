@@ -8,19 +8,19 @@ describe("Teste o login de um usuario inexistente", function () {
     })
 
     it("Tenta fazer o login com um usuario inexistente", function () {
-        cy.request({
-            method: "POST",
-            url: "/auth/login",
-            body: {
-                email: "garantiaDeErro" + fakeMail,
-                password: "123456"
-            },
-            failOnStatusCode: false
-        }).then(function (response) {
-            expect(response.body).to.deep.equal(this.erroUsuarioInvalido);
-            expect(response.status).to.equal(401);
-            expect(response.body.error).to.equal("Unauthorized");
-            expect(response.body.message).to.equal("Invalid username or password.");
+        cy.fixture("users/responses/erroUsuarioInvalido").then(function (erro) {
+            cy.request({
+                method: "POST",
+                url: "/auth/login",
+                body: {
+                    email: "garantiaDeErro" + fakeMail,
+                    password: "123456"
+                },
+                failOnStatusCode: false
+            }).then(function (response) {
+                expect(response.status).to.equal(401);
+                expect(response.body).to.deep.equal(erro);
+            })
         })
     })
 })
@@ -73,7 +73,24 @@ describe("Teste o login de um usuario existente", function () {
         }).then(function (response) {
             uid = response.body.id
         })
-    })
+    });
+    after(function () {
+        cy.request({
+            method: "PATCH",
+            url: "/users/admin",
+            headers: {
+                Authorization: 'Bearer ' + token
+            },
+        }).then(function () {
+            cy.request({
+                method: "DELETE",
+                url: "/users/" + uid,
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            });
+        });
+    });
     it("Faz o login com um usuario existente", function () {
         cy.request("POST", "/auth/login",
             {
@@ -88,23 +105,7 @@ describe("Teste o login de um usuario existente", function () {
             });
         })
     })
-    afterEach(function () {
-        cy.request({
-            method: "PATCH",
-            url: "/users/admin",
-            headers: {
-                Authorization: 'Bearer ' + token
-            },
-        }).then(function () {
-            cy.request({
-                method: "DELETE",
-                url: "/users/" + uid,
-                headers: {
-                    Authorization: 'Bearer ' + token
-                }
-            })
-        })
-    })
     
+
 })
 

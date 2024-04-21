@@ -1,23 +1,26 @@
 import { faker } from "@faker-js/faker";
+import { LoremIpsum } from "lorem-ipsum";
+
 
 
 describe("Testes de Cadastro de filme sem usuario conectado", function () {
     before(function () {
-        cy.fixture("users/responses/erroUserNaoAutorizado").as("erroNaoAutorizado")
-    })
+        cy.fixture("requests/cadastroFilme").as("filmeTeste")
+    });
     it("Tenta fazer o cadastro de um filme sem logar em um usuario", function () {
-        cy.request({
-            method: "POST",
-            url: "/movies",
-            body: this.filmeTeste,
-            failOnStatusCode: false
-        }).then(function (response) {
-
-            expect(response.status).to.equal(401)
-            expect(response.body).to.deep.equal(this.erroNaoAutorizado)
-        })
-    })
-})
+        cy.fixture("users/responses/erroUserNaoAutorizado").then(function (erro) {
+            cy.request({
+                method: "POST",
+                url: "/movies",
+                body: this.filmeTeste,
+                failOnStatusCode: false
+            }).then(function (response) {
+                expect(response.status).to.equal(401);
+                expect(response.body).to.deep.equal(erro);
+            });
+        });
+    });
+});
 
 describe("Testes de Cadastro de filme com usuario comum", function () {
     let criaEmail = faker.internet.email()
@@ -27,96 +30,74 @@ describe("Testes de Cadastro de filme com usuario comum", function () {
             name: criaNome,
             email: criaEmail,
             password: "123456"
-        })
-        cy.fixture("requests/cadastroFilme").as("filmeTeste")
+        });
         cy.fixture("users/responses/erroUserNaoAutorizado").as("erroNaoAutorizado")
-    })
+    });
+    //desativa o usuario criado
     afterEach(function () {
-        let token
-        cy.request("POST", "/auth/login", {
-            email: criaEmail,
-            password: "123456"
-        }).then(function (response) {
-            token = response.body.accessToken
+        cy.inativaUser(criaEmail)
+    });
+    it("Login usuario comum e tenta cadastrar um filme", function () {
+        cy.fixture("requests/cadastroFilme").then(function (filme) {
             cy.request({
-                method: "PATCH",
-                url: "/users/inactivate",
-                headers: {
-                    Authorization: 'Bearer ' + token
+                method: "POST",
+                url: "/auth/login",
+                body: {
+                    email: criaEmail,
+                    password: "123456"
                 }
             })
-        })
-    })
-    it("Login usuario comum e tenta cadastrar um filme", function () {
-        cy.request({
-            method: "POST",
-            url: "/auth/login",
-            body: {
-                email: criaEmail,
-                password: "123456"
-            }
-        })
-        cy.request({
-            method: "POST",
-            url: "/movies",
-            body: this.filmeTeste,
-            failOnStatusCode: false
-        }).then(function (response) {
-            expect(response.status).to.equal(401)
-            expect(response.body).to.deep.equal(this.erroNaoAutorizado)
-        })
-    })
-})
+            cy.request({
+                method: "POST",
+                url: "/movies",
+                body: filme,
+                failOnStatusCode: false
+            }).then(function (response) {
+                expect(response.status).to.equal(401)
+                expect(response.body).to.deep.equal(this.erroNaoAutorizado)
+            })
+        });
+    });
+});
 
 describe("Testes de Cadastro de filme com usuario administrador", function () {
-    let userToken
-    let tamanhoArray
-    let emailTeste = faker.internet.email()
-    let nomeTeste = faker.internet.userName()
-    let uid
+    const lorem = new LoremIpsum({
+        wordsPerSentence: {
+            max: 10,
+            min: 3
+        }
+    });
+    let uId;
+    let userToken;
+    let tamanhoArray;
+    let filme;
     before(function () {
-        cy.fixture("/requests/cadastroFilme").as("dadosFilme")
-        cy.request("POST", "/users", {
-            name: nomeTeste,
-            email: emailTeste,
-            password: "123456"
-        }).then(function (response) {
-            uid = response.body.id
-            cy.request("POST", "/auth/login", {
-                email: emailTeste,
-                password: "123456"
-            }).then(function (response) {
-                userToken = response.body.accessToken
-                expect(response.status).to.equal(200)
-                cy.request({
-                    method: "PATCH",
-                    url: "/users/admin",
-                    headers: {
-                        Authorization: 'Bearer ' + userToken
-                    }
-                })
-            })
+        cy.criaELoga().then(function (userData) {
+            uId = userData.userId
+            userToken = userData.uToken
         })
     })
-    afterEach(function () {
-        cy.request({
-            method: "DELETE",
-            url: "/users/" + uid,
-            headers: {
-                Authorization: 'Bearer ' + userToken
-            }
-        })
+    after(function () {
+        cy.deletaUser(uId, userToken)
     })
-    it("Faz o login de um usuario administrador e cadastra um filme", function () {
+    it("Faz o cadastro de um filme", function () {
         cy.request({
             method: "POST",
             url: "/movies",
-            body: this.dadosFilme,
+            body: {
+                title: lorem.generateSentences(1),
+                genre: "Ficção científica/Aventura",
+                description: lorem.generateSentences(1),
+                durationInMinutes: 151,
+                releaseYear: 2015
+            },
             headers: {
                 Authorization: 'Bearer ' + userToken
             }
         }).then(function (response) {
+            filme = response.body
             expect(response.status).to.equal(201)
+            cy.log(filme)
         })
         cy.request({
             method: "GET",
@@ -124,11 +105,16 @@ describe("Testes de Cadastro de filme com usuario administrador", function () {
         }).then(function (response) {
             tamanhoArray = response.body.length - 1
             expect(response.status).to.equal(200)
-            expect(response.body[tamanhoArray]).to.include(this.dadosFilme)
-        })
-    })
-
-})
+            expect(response.body).to.be.an("array")
+            expect(response.body[tamanhoArray].id).to.be.an("number")
+            expect(response.body[tamanhoArray].title).to.be.an("string")
+            expect(response.body[tamanhoArray].genre).to.deep.equal("Ficção científica/Aventura")
+            expect(response.body[tamanhoArray].description).to.be.an("string")
+            expect(response.body[tamanhoArray].durationInMinutes).to.equal(151)
+            expect(response.body[tamanhoArray].releaseYear).to.equal(2015)
+        });
+    });
+});
 
 describe("Testes de busca de filmes", function () {
     let tamanhoArray
@@ -176,4 +162,53 @@ describe("Testes de busca de filmes", function () {
     })
 })
 
-
+describe("Testes de atualização de filmes", function () {
+    let uId;
+    let userToken;
+    let titulo;
+    let descricao;
+    let tamanhoArray;
+    let idFilme;
+    before(function () {
+        cy.criaELoga().then(function (userData) {
+            uId = userData.userId
+            userToken = userData.uToken
+        }).then(function () {
+            cy.criaFilme(userToken).then(function (filmeData) {
+                titulo = filmeData.titulo
+                descricao = filmeData.descricao
+            }).then(function () {
+                cy.log(titulo)
+                cy.log(descricao)
+            })
+        })
+    })
+    after(function () {
+        cy.deletaUser(uId, userToken)
+    })
+    it("Testa a alteração do cadastro de um filme", function () {
+        cy.request({
+            method: "GET",
+            url: "/movies",
+            sort: false
+        }).then(function (response) {
+            expect(response.status).to.eq(200)
+            tamanhoArray = response.body.length - 1
+            idFilme = response.body[tamanhoArray].id
+            if (response.body[tamanhoArray].title === titulo) {
+                cy.editaFilme(idFilme, userToken)
+                    .then(function () {
+                        cy.fixture("requests/cadastroFilme").then(function (filme) {
+                            cy.request({
+                                method: "GET",
+                                url: "/movies/" + idFilme,
+                            }).then(function (response) {
+                                expect(response.status).to.eq(200)
+                                expect(response.body).to.deep.include(filme)
+                            })
+                        })
+                    })
+            }
+        })
+    })
+})
