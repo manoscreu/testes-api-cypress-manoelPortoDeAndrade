@@ -162,7 +162,7 @@ describe("Testes de busca de filmes", function () {
     })
 })
 
-describe("Testes de atualização de filmes", function () {
+describe.only("Testes de atualização de filmes", function () {
     let uId;
     let userToken;
     let titulo;
@@ -196,7 +196,22 @@ describe("Testes de atualização de filmes", function () {
             tamanhoArray = response.body.length - 1
             idFilme = response.body[tamanhoArray].id
             if (response.body[tamanhoArray].title === titulo) {
-                cy.editaFilme(idFilme, userToken)
+                cy.request({
+                    method: "PUT",
+                    url: "movies/" + idFilme,
+                    body: {
+                        "title": "Perdido em Marte",
+                        "genre": "Ficção científica/Aventura",
+                        "description": "Matt Damon se encontra em mais uma enrascada e precisa ser salvo, só que dessa vez é fora da terra",
+                        "durationInMinutes": 151,
+                        "releaseYear": 2015
+                    },
+                    headers: {
+                        Authorization: 'Bearer ' + userToken
+                    }
+                }).then(function(response){
+                    expect(response.status).to.equal(204)
+                })
                     .then(function () {
                         cy.fixture("requests/cadastroFilme").then(function (filme) {
                             cy.request({
