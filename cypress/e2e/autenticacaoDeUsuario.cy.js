@@ -58,7 +58,6 @@ describe("Teste Bad Requests", function () {
     })
 })
 
-
 describe("Teste o login de um usuario existente", function () {
     // posso criar um usuario antes com o command para n ter perigo de perder o user caso a api resete
     let emailTeste = faker.internet.email()

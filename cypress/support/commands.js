@@ -22,12 +22,14 @@
 import { LoremIpsum } from "lorem-ipsum";
 
 Cypress.Commands.add("criaFilme", function (uToken) {
+    cy.log("Cria um filme para testes")
     const lorem = new LoremIpsum({
         wordsPerSentence: {
             max: 10,
             min: 3
         }
     });
+    let idFilme;
     let titulo = lorem.generateSentences(1)
     let descricao = lorem.generateSentences(1)
     cy.request({
@@ -43,15 +45,17 @@ Cypress.Commands.add("criaFilme", function (uToken) {
         headers: {
             Authorization: 'Bearer ' + uToken
         }
-    }).then(function () {
+    }).then(function (response) {
+        idFilme = response.body.id
         return {
             titulo: titulo,
-            descricao: descricao
+            descricao: descricao,
+            idFilme: idFilme
         }
     })
 })
 
-Cypress.Commands.add("editaFilme", function (uId,uToken) {
+Cypress.Commands.add("editaFilme", function (uId, uToken) {
     cy.request({
         method: "PUT",
         url: "movies/" + uId,
@@ -65,7 +69,18 @@ Cypress.Commands.add("editaFilme", function (uId,uToken) {
         headers: {
             Authorization: 'Bearer ' + uToken
         }
-    }).then(function(response){
+    }).then(function (response) {
         expect(response.status).to.equal(204)
+    })
+})
+
+Cypress.Commands.add("deletaFilme", function (idFilme, uToken) {
+    cy.log("Deletando o filme")
+    cy.request({
+        method: "DELETE",
+        url: "movies/" + idFilme,
+        headers: {
+            Authorization: 'Bearer ' + uToken
+        }
     })
 })
